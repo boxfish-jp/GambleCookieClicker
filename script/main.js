@@ -300,8 +300,8 @@ function register(scene, font, registerLayer, cookieLayer, rankingLayer) {
         parent: registerLayer,
         anchorX: 0.5,
         anchorY: 0.5,
-        x: 400,
-        y: 250,
+        x: 110,
+        y: 180,
         scaleX: 0.6,
         scaleY: 0.6,
         src: scene.asset.getImageById("cookie"),
@@ -1202,7 +1202,6 @@ function main(param) {
         // このシーンで利用するアセットのIDを列挙し、シーンに通知します
         assetIds: [
             "cookie",
-            "player",
             "startGamble",
             "key1",
             "key2",
