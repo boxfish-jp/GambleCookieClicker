@@ -150,7 +150,7 @@
 			"atsumaru": "0"
 		},
 		"nicolive": {
-			"supportedModes": ["multi_admission"]
+			"supportedModes": ["multi"]
 		}
 	},
 	"globalScripts": [

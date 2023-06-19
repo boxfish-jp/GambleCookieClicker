@@ -239,7 +239,7 @@ function streamer(scene, font, streamerLayer, playersTable) {
             choiceNum1.opacity = 0;
             choiceNum1.modified();
         }
-        console.log("resultPending", resultPending);
+        //console.log("resultPending", resultPending);
     }
     choiceNum1.onPointDown.add(function () {
         choiceSelect(1);
@@ -310,15 +310,17 @@ function register(scene, font, registerLayer, cookieLayer, rankingLayer) {
     });
     registerImage.onPointDown.add(function () {
         resolvePlayerInfo({ raises: true });
-        registerLayer.hide();
-        cookieClick(scene, font, cookieLayer);
-        ranking(scene, font, rankingLayer);
     });
 }
 
 // クッキークリッカー
 function cookieClick(scene, font, cookieLayer) {
     let score = 0;
+    if (!g.game.isActiveInstance()) {
+        score = playersTable[g.game.selfId].score;
+        //console.log("score", score);
+    }
+    //console.log("score");
     let time = 0;
     let autoClicker = 0;
     function click() {
@@ -326,6 +328,19 @@ function cookieClick(scene, font, cookieLayer) {
         cookieCounter.text = score.toString() + "枚";
         cookieCounter.invalidate();
     }
+
+    let cookieClickerBackGround = new g.FilledRect({
+        scene: scene,
+        parent: cookieLayer,
+        cssColor: "white",
+        width: 220,
+        height: 120,
+        x: 0,
+        y: 0,
+        local: true,
+        opacity: 0.5,
+    });
+
     let cookieCounter = new g.Label({
         scene: scene,
         parent: cookieLayer,
@@ -1146,6 +1161,16 @@ function ranking(scene, font, rankingLayer) {
         local: true,
         touchable: true,
     });
+    let RankingBackgroundColor = new g.FilledRect({
+        scene: scene,
+        parent: rankingLayer,
+        cssColor: "White",
+        width: 450,
+        height: 400,
+        x: 0,
+        y: 450,
+        opacity: 0,
+    });
     R1.hide();
     R2.hide();
     R3.hide();
@@ -1161,6 +1186,8 @@ function ranking(scene, font, rankingLayer) {
             R4.hide();
             R5.hide();
             yourRank.hide();
+            RankingBackgroundColor.opacity = 0;
+            RankingBackgroundColor.modified();
             showRank = false;
         } else {
             R1.show();
@@ -1169,6 +1196,8 @@ function ranking(scene, font, rankingLayer) {
             R4.show();
             R5.show();
             yourRank.show();
+            RankingBackgroundColor.opacity = 0.3;
+            RankingBackgroundColor.modified();
             showRank = true;
         }
     });
@@ -1259,12 +1288,20 @@ function main(param) {
         g.game.onPlayerInfo.add((ev) => {
             const player = ev.player;
             let myID = player.id;
-            playersTable[myID] = {
-                name: player.name, // 名前
-                score: 0, // スコア
-                betting: false, // 賭け中かどうか
-                bet: [0, 0], // 賭けた選択肢と賭けたクッキ賭けたクッキーの数
-            };
+            //console.log(myID);
+            if (!(myID in playersTable)) {
+                playersTable[myID] = {
+                    name: player.name, // 名前
+                    score: 0, // スコア
+                    betting: false, // 賭け中かどうか
+                    bet: [0, 0], // 賭けた選択肢と賭けたクッキ賭けたクッキーの数
+                };
+            }
+            if (!g.game.isActiveInstance() && myID == g.game.selfId) {
+                registerLayer.hide();
+                cookieClick(scene, font, cookieLayer);
+                ranking(scene, font, rankingLayer);
+            }
         });
         g.game.onJoin.add((ev) => {
             const broadcastPlyerId = ev.player.id;
@@ -1277,7 +1314,7 @@ function main(param) {
             if (msg.data.click) {
                 // クッキーをクリックしたとき
                 playersTable[msg.player.id].score = msg.data.click;
-                console.log(playersTable);
+                //console.log(playersTable);
             } else if (msg.data.startGamble) {
                 // 賭け開始
                 let betInputLayer = new g.E({
@@ -1290,7 +1327,7 @@ function main(param) {
                     parent: scene,
                     local: true,
                 });
-                console.log("startGamble");
+                //console.log("startGamble");
                 gambleTime = true;
                 gamble(scene, font, betInputLayer, msg.data.choiceNum);
                 odds(scene, font, oddsLayer);
@@ -1299,7 +1336,7 @@ function main(param) {
                 playersTable[msg.player.id].bet = msg.data.bet;
                 playersTable[msg.player.id].betting = true;
                 playersTable[msg.player.id].score -= msg.data.bet[1];
-                console.log(playersTable);
+                //console.log(playersTable);
             } else if (msg.data.result) {
                 let dividendLayer = new g.E({
                     scene: scene,
