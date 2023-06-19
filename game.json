@@ -117,10 +117,7 @@
 			"systemId": "sound",
 			"duration": 5782,
 			"hint": {
-				"extensions": [
-					".aac",
-					".ogg"
-				]
+				"extensions": [".aac", ".ogg"]
 			}
 		},
 		"ROTM": {
@@ -153,9 +150,7 @@
 			"atsumaru": "0"
 		},
 		"nicolive": {
-			"supportedMods": [
-				"multi_admission"
-			]
+			"supportedModes": ["multi_admission"]
 		}
 	},
 	"globalScripts": [
