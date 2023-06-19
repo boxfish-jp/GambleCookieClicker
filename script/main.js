@@ -295,6 +295,8 @@ function streamer(scene, font, streamerLayer, playersTable) {
 
 // ユーザー名の設定
 function register(scene, font, registerLayer, cookieLayer, rankingLayer) {
+    let time = 0;
+    let touched = false;
     let registerImage = new g.Sprite({
         scene: scene,
         parent: registerLayer,
@@ -309,7 +311,17 @@ function register(scene, font, registerLayer, cookieLayer, rankingLayer) {
         local: true,
     });
     registerImage.onPointDown.add(function () {
-        resolvePlayerInfo({ raises: true });
+        if (!touched) {
+            resolvePlayerInfo({ raises: true });
+            touched = true;
+            time = 0;
+        }
+    });
+    scene.onUpdate.add(function () {
+        time++;
+        if (time > 30 * 5) {
+            touched = false;
+        }
     });
 }
 
@@ -426,6 +438,9 @@ function cookieClick(scene, font, cookieLayer) {
         autoClick.modified();
         score = score - 50;
         click();
+        shop.opacity = 0;
+        shop.touchable = false;
+        shop.modified();
     });
     let shopShowing = false;
     shop.onPointDown.add(function () {
@@ -1070,6 +1085,16 @@ function dividend(scene, font, dividendLayer, resultInfo) {
 }
 
 function ranking(scene, font, rankingLayer) {
+    let RankingBackgroundColor = new g.FilledRect({
+        scene: scene,
+        parent: rankingLayer,
+        cssColor: "White",
+        width: 450,
+        height: 400,
+        x: 0,
+        y: 450,
+        opacity: 0,
+    });
     let R1 = new g.Label({
         scene: scene,
         parent: rankingLayer,
@@ -1160,16 +1185,6 @@ function ranking(scene, font, rankingLayer) {
         scaleY: 0.4,
         local: true,
         touchable: true,
-    });
-    let RankingBackgroundColor = new g.FilledRect({
-        scene: scene,
-        parent: rankingLayer,
-        cssColor: "White",
-        width: 450,
-        height: 400,
-        x: 0,
-        y: 450,
-        opacity: 0,
     });
     R1.hide();
     R2.hide();
