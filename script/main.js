@@ -6,6 +6,7 @@ let resultPending = false; // 結果待ちかどうか
 // 参加者の情報を保持するテーブル
 let playersTable = {};
 let firstGamble = true; // 初回賭けかどうか
+let updateAllow = true; // 更新を許可するかどうか
 
 // 放送者のみ表示
 // 賭けの設定ができる
@@ -328,19 +329,26 @@ function register(scene, font, registerLayer, cookieLayer, rankingLayer) {
 // クッキークリッカー
 function cookieClick(scene, font, cookieLayer) {
     let score = 0;
-    if (!g.game.isActiveInstance()) {
-        score = playersTable[g.game.selfId].score;
-        //console.log("score", score);
-    }
     //console.log("score");
     let time = 0;
     let autoClicker = 0;
-    function click() {
-        g.game.raiseEvent(new g.MessageEvent({ click: score }));
-        cookieCounter.text = score.toString() + "枚";
+    function click(num) {
+        console.log(num);
+        score = num;
+        g.game.raiseEvent(new g.MessageEvent({ click: num }));
+        cookieCounter.text = num.toString() + "枚";
         cookieCounter.invalidate();
     }
 
+    function update() {
+        if (!g.game.isActiveInstance() && updateAllow) {
+            //　リロード対策として最新情報の取得
+            score = playersTable[g.game.selfId].score;
+            cookieCounter.text = score.toString() + "枚";
+            cookieCounter.invalidate();
+            autoClicker = playersTable[g.game.selfId].buy[0];
+        }
+    }
     let cookieClickerBackGround = new g.FilledRect({
         scene: scene,
         parent: cookieLayer,
@@ -420,11 +428,12 @@ function cookieClick(scene, font, cookieLayer) {
         local: true,
     });
     cookie.onPointDown.add(function () {
+        update();
         score++;
-        click();
         cookie.scaleX = 0.65;
         cookie.scaleY = 0.65;
         cookie.modified();
+        click(score);
     });
     cookie.onPointUp.add(function () {
         cookie.scaleX = 0.6;
@@ -436,11 +445,14 @@ function cookieClick(scene, font, cookieLayer) {
         autoClick.opacity = 0;
         autoClick.touchable = false;
         autoClick.modified();
-        score = score - 50;
-        click();
+        cookieCounter.text = (score - 50).toString() + "枚";
+        cookieCounter.invalidate();
         shop.opacity = 0;
         shop.touchable = false;
         shop.modified();
+        g.game.raiseEvent(
+            new g.MessageEvent({ buy: "autoClick", items: autoClicker })
+        );
     });
     let shopShowing = false;
     shop.onPointDown.add(function () {
@@ -465,9 +477,9 @@ function cookieClick(scene, font, cookieLayer) {
         }
         if (time % 300 == 0) {
             if (autoClicker > 0) {
-                score = autoClicker + score;
-                click();
+                click(autoClicker + score);
             }
+            //console.log(time);
         }
         if (score >= 50) {
             shop.opacity = 1;
@@ -1310,6 +1322,7 @@ function main(param) {
                     score: 0, // スコア
                     betting: false, // 賭け中かどうか
                     bet: [0, 0], // 賭けた選択肢と賭けたクッキ賭けたクッキーの数
+                    buy: [0, 0], // 購入したアイテム[自動クリック]
                 };
             }
             if (!g.game.isActiveInstance() && myID == g.game.selfId) {
@@ -1365,6 +1378,13 @@ function main(param) {
                 playersTable[msg.player.id].score += msg.data.dividend;
                 playersTable[msg.player.id].bet = [0, 0];
                 playersTable[msg.player.id].betting = false;
+            } else if (msg.data.buy) {
+                // アイテム購入
+                if (msg.data.buy == "autoClick") {
+                    playersTable[msg.player.id].buy[0] = msg.data.items;
+                    playersTable[msg.player.id].score -= 50;
+                    console.log("update");
+                }
             }
         });
         // ここまでゲーム内容を記述します
