@@ -12,6 +12,7 @@ let updateAllow = true; // 更新を許可するかどうか
 // 賭けの設定ができる
 function streamer(scene, font, streamerLayer, playersTable) {
     let choiceNum = 0;
+    /*  賭けの枚数の合計は現在非表示にしています。
     let scoreSum = new g.Label({
         scene: scene,
         font: font,
@@ -28,6 +29,7 @@ function streamer(scene, font, streamerLayer, playersTable) {
         touchable: true,
         local: true,
     });
+    */
     let choiceIndi = new g.Label({
         scene: scene,
         font: font,
@@ -205,8 +207,8 @@ function streamer(scene, font, streamerLayer, playersTable) {
 
     let close;
     scene.onUpdate.add(function () {
+        /*
         let totalScore = 0;
-
         for (const key in playersTable) {
             if (playersTable.hasOwnProperty(key)) {
                 totalScore += playersTable[key].score;
@@ -214,6 +216,7 @@ function streamer(scene, font, streamerLayer, playersTable) {
         }
         scoreSum.text = "総クッキー数" + totalScore.toString() + "個";
         scoreSum.invalidate();
+        */
         if (gambleTime) {
             startGamble.touchable = false;
             startGamble.opacity = 0;
@@ -239,6 +242,13 @@ function streamer(scene, font, streamerLayer, playersTable) {
             choiceNum1.touchable = false;
             choiceNum1.opacity = 0;
             choiceNum1.modified();
+            // 選択肢ボタンの再表示
+            for (let i = 2; i <= 9; i++) {
+                const element = eval("choiceNum" + i.toString());
+                element.touchable = true;
+                element.opacity = 1;
+                element.modified();
+            }
         }
         //console.log("resultPending", resultPending);
     }
@@ -271,6 +281,13 @@ function streamer(scene, font, streamerLayer, playersTable) {
     });
     startGamble.onPointDown.add(function () {
         if (!choiceNum) return;
+        // すべてのchoiceNumを非表示にする
+        for (let i = 1; i <= 9; i++) {
+            const element = eval("choiceNum" + i.toString());
+            element.touchable = false;
+            element.opacity = 0;
+            element.modified();
+        }
         g.game.raiseEvent(
             new g.MessageEvent({ startGamble: true, choiceNum: choiceNum })
         );
@@ -281,6 +298,13 @@ function streamer(scene, font, streamerLayer, playersTable) {
         explain.invalidate();
     });
     closeGamble.onPointDown.add(function () {
+        // 正解の選択肢ボタンを表示する
+        for (let i = 1; i <= choiceNum; i++) {
+            const element = eval("choiceNum" + i.toString());
+            element.touchable = true;
+            element.opacity = 1;
+            element.modified();
+        }
         g.game.raiseEvent(new g.MessageEvent({ closeGamble: true }));
         closeGamble.touchable = false;
         closeGamble.opacity = 0;
@@ -445,7 +469,8 @@ function cookieClick(scene, font, cookieLayer) {
         autoClick.opacity = 0;
         autoClick.touchable = false;
         autoClick.modified();
-        cookieCounter.text = (score - 50).toString() + "枚";
+        score -= 50;
+        cookieCounter.text = score.toString() + "枚";
         cookieCounter.invalidate();
         shop.opacity = 0;
         shop.touchable = false;
@@ -477,7 +502,8 @@ function cookieClick(scene, font, cookieLayer) {
         }
         if (time % 300 == 0) {
             if (autoClicker > 0) {
-                click(autoClicker + score);
+                score += autoClicker;
+                click(score);
             }
             //console.log(time);
         }
@@ -802,6 +828,13 @@ function gamble(scene, font, betInputLayer, choiceNum) {
 
     confirmBtn.onPointDown.add(function () {
         if (selecting) {
+            // 非表示になっている選択肢ボタンを表示
+            for (let i = 0; i <= 9; i++) {
+                const element = eval("key" + i.toString());
+                element.touchable = true;
+                element.opacity = 1;
+                element.modified();
+            }
             betInfo[0] = keySum(keyLen, betScoreIndi);
             confirmInfo.text = betInfo[0].toString() + "に投票中";
             confirmInfo.invalidate();
@@ -829,6 +862,15 @@ function gamble(scene, font, betInputLayer, choiceNum) {
             hide.destroy();
         }
     });
+    // 賭けの選択肢の表示を選択肢の数だけ表示させる
+    for (let i = 0; i <= 9; i++) {
+        if (i == 0 || choiceNum < i) {
+            const element = eval("key" + i.toString());
+            element.touchable = false;
+            element.opacity = 0;
+            element.modified();
+        }
+    }
 }
 
 function calcOdds(choice) {
