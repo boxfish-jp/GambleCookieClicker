@@ -1,5 +1,4 @@
 node_modules
-cookie.zip
-game.zip
+*.zip
 .vscode
 
