@@ -9,6 +9,7 @@ let firstGamble = true; // 初回賭けかどうか
 let updateAllow = true; // 更新を許可するかどうか
 
 // 放送者のみ表示
+
 // 賭けの設定ができる
 function streamer(scene, font, streamerLayer, playersTable) {
     let choiceNum = 0;
@@ -230,7 +231,7 @@ function streamer(scene, font, streamerLayer, playersTable) {
     function choiceSelect(num) {
         if (!gambleTime) {
             choiceNum = num;
-            choiceIndi.text = choiceNum.toString() + "個の選択肢で賭けを始める";
+            choiceIndi.text = choiceNum.toString() + "択の賭けを始める";
             choiceIndi.invalidate();
         } else if (resultPending) {
             resultPending = false;
@@ -356,8 +357,9 @@ function cookieClick(scene, font, cookieLayer) {
     //console.log("score");
     let time = 0;
     let autoClicker = 0;
+    let waitUpdate = 0; // メッセージを投げてからの時間
     function click(num) {
-        console.log(num);
+        //console.log(num);
         score = num;
         g.game.raiseEvent(new g.MessageEvent({ click: num }));
         cookieCounter.text = num.toString() + "枚";
@@ -365,12 +367,13 @@ function cookieClick(scene, font, cookieLayer) {
     }
 
     function update() {
-        if (!g.game.isActiveInstance() && updateAllow) {
+        if (!g.game.isActiveInstance() && updateAllow && waitUpdate > 60) {
             //　リロード対策として最新情報の取得
             score = playersTable[g.game.selfId].score;
             cookieCounter.text = score.toString() + "枚";
             cookieCounter.invalidate();
             autoClicker = playersTable[g.game.selfId].buy[0];
+            beforeUpdate = time;
         }
     }
     let cookieClickerBackGround = new g.FilledRect({
@@ -474,6 +477,7 @@ function cookieClick(scene, font, cookieLayer) {
         cookieCounter.invalidate();
         shop.opacity = 0;
         shop.touchable = false;
+        shopShowing = false;
         shop.modified();
         g.game.raiseEvent(
             new g.MessageEvent({ buy: "autoClick", items: autoClicker })
@@ -504,6 +508,7 @@ function cookieClick(scene, font, cookieLayer) {
             if (autoClicker > 0) {
                 score += autoClicker;
                 click(score);
+                waitUpdate = time;
             }
             //console.log(time);
         }
@@ -916,6 +921,19 @@ function calcOdds(choice) {
 function odds(scene, font, oddsLayer) {
     let time = 0;
     let destroy = false; // 投票画面が破棄されたか
+    let choiceSum = {
+        //オッズが入る
+        0: 0,
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0,
+        8: 0,
+        9: 0,
+    };
     let odds1 = new g.Label({
         scene: scene,
         parent: oddsLayer,
@@ -1040,7 +1058,38 @@ function odds(scene, font, oddsLayer) {
 
         if (time % 30 === 0) {
             // オッズの表示
-            const odds = {
+
+            // 各選択肢での賭けられたポイントの合計を計算
+            for (const key in playersTable) {
+                const bet = playersTable[key].bet;
+                const betAmount = bet[1];
+
+                choiceSum[bet[0]] += betAmount;
+            }
+
+            // 賭けられた総ポイントを計算
+            let totalAmount = 0;
+            for (const key in choiceSum) {
+                totalAmount += choiceSum[key];
+            }
+            // オッズを計算して表示
+            for (const key in choiceSum) {
+                if (key === "0") continue;
+                const betChoice = Number(key);
+                const oddsValue = totalAmount / choiceSum[betChoice];
+                if (choiceSum[betChoice] != 0) {
+                    const label = eval(`odds${key}`);
+                    label.text = `${key}番: ${oddsValue.toFixed(3)}倍`;
+                    label.invalidate();
+                }
+            }
+        }
+    });
+    scene.onMessage.add(function (msg) {
+        if (msg.data.result && destroy == false) {
+            // 結果発表されたら
+            choiceSum = {
+                //オッズ変数の初期化
                 0: 0,
                 1: 0,
                 2: 0,
@@ -1052,36 +1101,6 @@ function odds(scene, font, oddsLayer) {
                 8: 0,
                 9: 0,
             };
-
-            // 各選択肢での賭けられたポイントの合計を計算
-            for (const key in playersTable) {
-                const bet = playersTable[key].bet;
-                const betAmount = bet[1];
-
-                odds[bet[0]] += betAmount;
-            }
-
-            // 賭けられた総ポイントを計算
-            let totalAmount = 0;
-            for (const key in odds) {
-                totalAmount += odds[key];
-            }
-            // オッズを計算して表示
-            for (const key in odds) {
-                if (key === "0") continue;
-                const betChoice = Number(key);
-                const oddsValue = totalAmount / odds[betChoice];
-                if (odds[betChoice] != 0) {
-                    const label = eval(`odds${key}`);
-                    label.text = `${key}番: ${oddsValue.toFixed(3)}倍`;
-                    label.invalidate();
-                }
-            }
-        }
-    });
-    scene.onMessage.add(function (msg) {
-        if (msg.data.result && destroy == false) {
-            // 結果発表されたら
             oddsLayer.destroy();
             destroy = true;
         }
@@ -1265,7 +1284,7 @@ function ranking(scene, font, rankingLayer) {
             R4.show();
             R5.show();
             yourRank.show();
-            RankingBackgroundColor.opacity = 0.3;
+            RankingBackgroundColor.opacity = 0.6;
             RankingBackgroundColor.modified();
             showRank = true;
         }
