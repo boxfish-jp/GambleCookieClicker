@@ -7,12 +7,12 @@ let resultPending = false; // 結果待ちかどうか
 let playersTable = {};
 let firstGamble = true; // 初回賭けかどうか
 let updateAllow = true; // 更新を許可するかどうか
+let choiceNum = 0; // 賭けの選択肢の数
 
 // 放送者のみ表示
 
 // 賭けの設定ができる
 function streamer(scene, font, streamerLayer, playersTable) {
-    let choiceNum = 0;
     /*  賭けの枚数の合計は現在非表示にしています。
     let scoreSum = new g.Label({
         scene: scene,
@@ -51,7 +51,7 @@ function streamer(scene, font, streamerLayer, playersTable) {
         scene: scene,
         font: font,
         parent: streamerLayer,
-        text: "ギャンブルを始めるには,下のボタンで何択の賭けをするか入力してから、「賭け!」ボタンを押してください",
+        text: "賭けを始めるには,下のボタンで何択の賭けをするか入力して、「賭けを始める」ボタンを押してください",
         fontSize: 25,
         textColor: "#593018",
         anchorX: 0.5,
@@ -227,6 +227,21 @@ function streamer(scene, font, streamerLayer, playersTable) {
             startGamble.opacity = 1;
             startGamble.modified();
         }
+        if (gambleTime && !resultPending) {
+            // すべてのchoiceNumを非表示にする
+            for (let i = 1; i <= 9; i++) {
+                const element = eval("choiceNum" + i.toString());
+                element.touchable = false;
+                element.opacity = 0;
+                element.modified();
+            }
+            closeGamble.touchable = true;
+            closeGamble.opacity = 1;
+            closeGamble.modified();
+            explain.text =
+                "投票を締め切るには、「賭けを締め切る」ボタンを押しましょう";
+            explain.invalidate();
+        }
     });
     function choiceSelect(num) {
         if (!gambleTime) {
@@ -238,7 +253,7 @@ function streamer(scene, font, streamerLayer, playersTable) {
             g.game.raiseEvent(new g.MessageEvent({ result: num }));
             gambleTime = false;
             explain.text =
-                "ギャンブルを始めるには,下のボタンで何択の賭けをするか入力してから、「賭け!」ボタンを押してください";
+                "賭けを始めるには,下のボタンで何択の賭けをするか入力して、「賭けを始める」ボタンを押してください";
             explain.invalidate();
             choiceNum1.touchable = false;
             choiceNum1.opacity = 0;
@@ -282,21 +297,9 @@ function streamer(scene, font, streamerLayer, playersTable) {
     });
     startGamble.onPointDown.add(function () {
         if (!choiceNum) return;
-        // すべてのchoiceNumを非表示にする
-        for (let i = 1; i <= 9; i++) {
-            const element = eval("choiceNum" + i.toString());
-            element.touchable = false;
-            element.opacity = 0;
-            element.modified();
-        }
         g.game.raiseEvent(
             new g.MessageEvent({ startGamble: true, choiceNum: choiceNum })
         );
-        closeGamble.touchable = true;
-        closeGamble.opacity = 1;
-        closeGamble.modified();
-        explain.text = "投票を締め切るには、「締め切り」ボタンを押しましょう";
-        explain.invalidate();
     });
     closeGamble.onPointDown.add(function () {
         // 正解の選択肢ボタンを表示する
@@ -356,8 +359,12 @@ function cookieClick(scene, font, cookieLayer) {
     let score = 0;
     //console.log("score");
     let time = 0;
-    let autoClicker = 0;
+    let autoClicker = 0; // 自動クリック数
+    let grandmaes = 0; // おばあちゃんの数
+    let gamblers = 0; // 賭けの倍率
     let waitUpdate = 0; // メッセージを投げてからの時間
+    let doubleClicker = 0; // ダブルクリック数
+
     function click(num) {
         //console.log(num);
         score = num;
@@ -373,7 +380,10 @@ function cookieClick(scene, font, cookieLayer) {
             cookieCounter.text = score.toString() + "枚";
             cookieCounter.invalidate();
             autoClicker = playersTable[g.game.selfId].buy[0];
-            beforeUpdate = time;
+            grandmaes = playersTable[g.game.selfId].buy[1];
+            gamblers = playersTable[g.game.selfId].buy[2];
+            doubleClicker = playersTable[g.game.selfId].buy[3];
+            waitUpdate = time;
         }
     }
     let cookieClickerBackGround = new g.FilledRect({
@@ -454,13 +464,60 @@ function cookieClick(scene, font, cookieLayer) {
         opacity: 0,
         local: true,
     });
+    let grandma = new g.Sprite({
+        scene: scene,
+        parent: cookieLayer,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        x: 180,
+        y: 380,
+        scaleX: 0.5,
+        scaleY: 0.5,
+        src: scene.asset.getImageById("grandma"),
+        touchable: false,
+        opacity: 0,
+        local: true,
+    });
+    let gambler = new g.Sprite({
+        scene: scene,
+        parent: cookieLayer,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        x: 180,
+        y: 460,
+        scaleX: 0.5,
+        scaleY: 0.5,
+        src: scene.asset.getImageById("gambler"),
+        touchable: false,
+        opacity: 0,
+        local: true,
+    });
+    let doubleClick = new g.Sprite({
+        scene: scene,
+        parent: cookieLayer,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        x: 180,
+        y: 540,
+        scaleX: 0.5,
+        scaleY: 0.5,
+        src: scene.asset.getImageById("doubleClick"),
+        touchable: false,
+        opacity: 0,
+        local: true,
+    });
     cookie.onPointDown.add(function () {
         update();
-        score++;
+        if (doubleClicker > 0) {
+            score = score + doubleClicker * 2;
+        } else {
+            score++;
+        }
         cookie.scaleX = 0.65;
         cookie.scaleY = 0.65;
         cookie.modified();
         click(score);
+        scene.asset.getAudioById("ClickSE").play();
     });
     cookie.onPointUp.add(function () {
         cookie.scaleX = 0.6;
@@ -482,6 +539,58 @@ function cookieClick(scene, font, cookieLayer) {
         g.game.raiseEvent(
             new g.MessageEvent({ buy: "autoClick", items: autoClicker })
         );
+        scene.asset.getAudioById("BuySE").play();
+    });
+    grandma.onPointDown.add(function () {
+        grandmaes++;
+        grandma.opacity = 0;
+        grandma.touchable = false;
+        grandma.modified();
+        score -= 150;
+        cookieCounter.text = score.toString() + "枚";
+        cookieCounter.invalidate();
+        shop.opacity = 0;
+        shop.touchable = false;
+        shopShowing = false;
+        shop.modified();
+        g.game.raiseEvent(
+            new g.MessageEvent({ buy: "grandma", items: grandmaes })
+        );
+        scene.asset.getAudioById("BuySE").play();
+    });
+    gambler.onPointDown.add(function () {
+        gamblers++;
+        gambler.opacity = 0;
+        gambler.touchable = false;
+        gambler.modified();
+        score -= 500;
+        cookieCounter.text = score.toString() + "枚";
+        cookieCounter.invalidate();
+        shop.opacity = 0;
+        shop.touchable = false;
+        shopShowing = false;
+        shop.modified();
+        g.game.raiseEvent(
+            new g.MessageEvent({ buy: "gambler", items: gamblers })
+        );
+        scene.asset.getAudioById("BuySE").play();
+    });
+    doubleClick.onPointDown.add(function () {
+        doubleClicker++;
+        doubleClick.opacity = 0;
+        doubleClick.touchable = false;
+        doubleClick.modified();
+        score -= 300;
+        cookieCounter.text = score.toString() + "枚";
+        cookieCounter.invalidate();
+        shop.opacity = 0;
+        shop.touchable = false;
+        shopShowing = false;
+        shop.modified();
+        g.game.raiseEvent(
+            new g.MessageEvent({ buy: "doubleClick", items: doubleClicker })
+        );
+        scene.asset.getAudioById("BuySE").play();
     });
     let shopShowing = false;
     shop.onPointDown.add(function () {
@@ -490,11 +599,29 @@ function cookieClick(scene, font, cookieLayer) {
             autoClick.opacity = 0;
             autoClick.touchable = false;
             autoClick.modified();
+            grandma.opacity = 0;
+            grandma.touchable = false;
+            grandma.modified();
+            gambler.opacity = 0;
+            gambler.touchable = false;
+            gambler.modified();
+            doubleClick.opacity = 0;
+            doubleClick.touchable = false;
+            doubleClick.modified();
         } else {
             shopShowing = true;
             autoClick.opacity = 1;
             autoClick.touchable = true;
             autoClick.modified();
+            grandma.opacity = 1;
+            grandma.touchable = true;
+            grandma.modified();
+            gambler.opacity = 1;
+            gambler.touchable = true;
+            gambler.modified();
+            doubleClick.opacity = 1;
+            doubleClick.touchable = true;
+            doubleClick.modified();
         }
     });
     scene.onUpdate.add(function () {
@@ -506,11 +633,22 @@ function cookieClick(scene, font, cookieLayer) {
         }
         if (time % 300 == 0) {
             if (autoClicker > 0) {
-                score += autoClicker;
+                if (doubleClicker > 0) {
+                    score = score + doubleClicker * 2;
+                } else {
+                    score++;
+                }
                 click(score);
                 waitUpdate = time;
             }
             //console.log(time);
+        }
+        if (time % 150 == 0) {
+            if (grandmaes > 0) {
+                score += grandmaes;
+                click(score);
+                waitUpdate = time;
+            }
         }
         if (score >= 50) {
             shop.opacity = 1;
@@ -520,6 +658,54 @@ function cookieClick(scene, font, cookieLayer) {
             shop.opacity = 0;
             shop.touchable = false;
             shop.modified();
+        }
+        if (shopShowing && score >= 50) {
+            autoClick.opacity = 1;
+            autoClick.touchable = true;
+            autoClick.modified();
+        } else {
+            autoClick.opacity = 0;
+            autoClick.touchable = false;
+            autoClick.modified();
+        }
+        if (shopShowing && score >= 150) {
+            grandma.opacity = 1;
+            grandma.touchable = true;
+            grandma.modified();
+        } else if (shopShowing && score < 150) {
+            grandma.opacity = 0.5;
+            grandma.touchable = false;
+            grandma.modified();
+        } else {
+            grandma.opacity = 0;
+            grandma.touchable = false;
+            grandma.modified();
+        }
+        if (shopShowing && score >= 500) {
+            gambler.opacity = 1;
+            gambler.touchable = true;
+            gambler.modified();
+        } else if (shopShowing && score < 500) {
+            gambler.opacity = 0.5;
+            gambler.touchable = false;
+            gambler.modified();
+        } else {
+            gambler.opacity = 0;
+            gambler.touchable = false;
+            gambler.modified();
+        }
+        if (shopShowing && score >= 300) {
+            doubleClick.opacity = 1;
+            doubleClick.touchable = true;
+            doubleClick.modified();
+        } else if (shopShowing && score < 300) {
+            doubleClick.opacity = 0.5;
+            doubleClick.touchable = false;
+            doubleClick.modified();
+        } else {
+            doubleClick.opacity = 0;
+            doubleClick.touchable = false;
+            doubleClick.modified();
         }
     });
 
@@ -934,6 +1120,17 @@ function odds(scene, font, oddsLayer) {
         8: 0,
         9: 0,
     };
+    let oddsBackground = new g.FilledRect({
+        scene: scene,
+        parent: oddsLayer,
+        cssColor: "White",
+        opacity: 0.5,
+        width: 1280,
+        height: 33,
+        x: 0,
+        y: 0,
+        local: true,
+    });
     let odds1 = new g.Label({
         scene: scene,
         parent: oddsLayer,
@@ -1127,11 +1324,17 @@ function dividend(scene, font, dividendLayer, resultInfo) {
     scene.asset.getAudioById("JRA").play();
     if (!g.game.isActiveInstance()) {
         const mybet = playersTable[g.game.selfId].bet[0];
+        const bonus = playersTable[g.game.selfId].buy[2];
 
         if (mybet === resultInfo) {
             const myOdds = calcOdds(mybet);
+            if (bonus > 0) {
+                bonus = bonus * 2;
+            } else {
+                bonus = 1;
+            }
             const getScore = Math.floor(
-                playersTable[g.game.selfId].bet[1] * myOdds
+                playersTable[g.game.selfId].bet[1] * myOdds * bonus
             );
 
             dividedResult.text = `配当: ${getScore}枚`;
@@ -1338,6 +1541,11 @@ function main(param) {
             "JRA",
             "shop",
             "autoClick",
+            "ClickSE",
+            "BuySE",
+            "grandma",
+            "gambler",
+            "doubleClick",
         ],
     });
     const font = new g.DynamicFont({
@@ -1373,6 +1581,7 @@ function main(param) {
     });
     scene.onLoad.add(function () {
         // ここからゲーム内容を記述します
+        let broadcastPlyerId;
         g.game.onPlayerInfo.add((ev) => {
             const player = ev.player;
             let myID = player.id;
@@ -1383,20 +1592,20 @@ function main(param) {
                     score: 0, // スコア
                     betting: false, // 賭け中かどうか
                     bet: [0, 0], // 賭けた選択肢と賭けたクッキ賭けたクッキーの数
-                    buy: [0, 0], // 購入したアイテム[自動クリック]
+                    buy: [0, 0, 0, 0], // 購入したアイテム[自動クリック]
                 };
             }
             if (!g.game.isActiveInstance() && myID == g.game.selfId) {
                 registerLayer.hide();
                 cookieClick(scene, font, cookieLayer);
                 ranking(scene, font, rankingLayer);
+                if (g.game.selfId === broadcastPlyerId) {
+                    streamer(scene, font, streamerLayer);
+                }
             }
         });
         g.game.onJoin.add((ev) => {
-            const broadcastPlyerId = ev.player.id;
-            if (g.game.selfId === broadcastPlyerId) {
-                streamer(scene, font, streamerLayer);
-            }
+            broadcastPlyerId = ev.player.id;
         });
         register(scene, font, registerLayer, cookieLayer, rankingLayer);
         scene.onMessage.add((msg) => {
@@ -1444,7 +1653,19 @@ function main(param) {
                 if (msg.data.buy == "autoClick") {
                     playersTable[msg.player.id].buy[0] = msg.data.items;
                     playersTable[msg.player.id].score -= 50;
-                    console.log("update");
+                    //console.log("update");
+                }
+                if (msg.data.buy == "grandma") {
+                    playersTable[msg.player.id].buy[1] = msg.data.items;
+                    playersTable[msg.player.id].score -= 150;
+                }
+                if (msg.data.buy == "gambler") {
+                    playersTable[msg.player.id].buy[2] = msg.data.items;
+                    playersTable[msg.player.id].score -= 500;
+                }
+                if (msg.data.buy == "doubleClick") {
+                    playersTable[msg.player.id].buy[3] = msg.data.items;
+                    playersTable[msg.player.id].score -= 300;
                 }
             }
         });

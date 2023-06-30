@@ -15,18 +15,6 @@
 			"width": 250,
 			"height": 250
 		},
-		"startGamble": {
-			"type": "image",
-			"path": "image/startGamble.png",
-			"width": 100,
-			"height": 100
-		},
-		"close": {
-			"type": "image",
-			"path": "image/close.png",
-			"width": 104,
-			"height": 40
-		},
 		"ranking": {
 			"type": "image",
 			"path": "image/ranking.png",
@@ -117,7 +105,10 @@
 			"systemId": "sound",
 			"duration": 5782,
 			"hint": {
-				"extensions": [".aac", ".ogg"]
+				"extensions": [
+					".aac",
+					".ogg"
+				]
 			}
 		},
 		"ROTM": {
@@ -137,6 +128,60 @@
 			"path": "image/shop.png",
 			"width": 194,
 			"height": 500
+		},
+		"close": {
+			"type": "image",
+			"path": "image/close.png",
+			"width": 184,
+			"height": 57
+		},
+		"startGamble": {
+			"type": "image",
+			"path": "image/startGamble.png",
+			"width": 160,
+			"height": 57
+		},
+		"ClickSE": {
+			"type": "audio",
+			"path": "audio/ClickSE",
+			"systemId": "sound",
+			"duration": 988,
+			"hint": {
+				"extensions": [
+					".aac",
+					".ogg"
+				]
+			}
+		},
+		"BuySE": {
+			"type": "audio",
+			"path": "audio/BuySE",
+			"systemId": "sound",
+			"duration": 2263,
+			"hint": {
+				"extensions": [
+					".aac",
+					".ogg"
+				]
+			}
+		},
+		"grandma": {
+			"type": "image",
+			"path": "image/grandma.png",
+			"width": 499,
+			"height": 135
+		},
+		"gambler": {
+			"type": "image",
+			"path": "image/gambler.png",
+			"width": 499,
+			"height": 135
+		},
+		"doubleClick": {
+			"type": "image",
+			"path": "image/doubleClick.png",
+			"width": 499,
+			"height": 135
 		}
 	},
 	"moduleMainScripts": {
@@ -150,7 +195,9 @@
 			"atsumaru": "0"
 		},
 		"nicolive": {
-			"supportedModes": ["multi"]
+			"supportedModes": [
+				"multi"
+			]
 		}
 	},
 	"globalScripts": [
