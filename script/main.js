@@ -365,25 +365,30 @@ function cookieClick(scene, font, cookieLayer) {
     let waitUpdate = 0; // メッセージを投げてからの時間
     let doubleClicker = 0; // ダブルクリック数
 
-    function click(num) {
+    function earn(num) {
+        // 増えたクッキーの情報を更新
         //console.log(num);
-        score = num;
-        g.game.raiseEvent(new g.MessageEvent({ click: num }));
-        cookieCounter.text = num.toString() + "枚";
+        g.game.raiseEvent(new g.MessageEvent({ earn: num }));
+        cookieCounter.text = (num + score).toString() + "枚";
+        cookieCounter.invalidate();
+    }
+    function lose(num) {
+        // 減ったクッキーの情報を更新
+        g.game.raiseEvent(new g.MessageEvent({ lose: num }));
+        cookieCounter.text = (score - num).toString() + "枚";
         cookieCounter.invalidate();
     }
 
     function update() {
-        if (!g.game.isActiveInstance() && updateAllow && waitUpdate > 60) {
+        if (!g.game.isActiveInstance() && updateAllow) {
             //　リロード対策として最新情報の取得
             score = playersTable[g.game.selfId].score;
-            cookieCounter.text = score.toString() + "枚";
-            cookieCounter.invalidate();
             autoClicker = playersTable[g.game.selfId].buy[0];
             grandmaes = playersTable[g.game.selfId].buy[1];
             gamblers = playersTable[g.game.selfId].buy[2];
             doubleClicker = playersTable[g.game.selfId].buy[3];
-            waitUpdate = time;
+            cookieCounter.text = score.toString() + "枚";
+            cookieCounter.invalidate();
         }
     }
     let cookieClickerBackGround = new g.FilledRect({
@@ -507,16 +512,11 @@ function cookieClick(scene, font, cookieLayer) {
         local: true,
     });
     cookie.onPointDown.add(function () {
-        update();
-        if (doubleClicker > 0) {
-            score = score + doubleClicker * 2;
-        } else {
-            score++;
-        }
         cookie.scaleX = 0.65;
         cookie.scaleY = 0.65;
         cookie.modified();
-        click(score);
+        let clickCount = 2 ** doubleClicker;
+        earn(clickCount); // クリック数を送信
         scene.asset.getAudioById("ClickSE").play();
     });
     cookie.onPointUp.add(function () {
@@ -525,54 +525,39 @@ function cookieClick(scene, font, cookieLayer) {
         cookie.modified();
     });
     autoClick.onPointDown.add(function () {
-        autoClicker++;
         autoClick.opacity = 0;
         autoClick.touchable = false;
         autoClick.modified();
-        score -= 50;
-        cookieCounter.text = score.toString() + "枚";
-        cookieCounter.invalidate();
+        lose(50);
         shop.opacity = 0;
         shop.touchable = false;
         shopShowing = false;
         shop.modified();
-        g.game.raiseEvent(
-            new g.MessageEvent({ buy: "autoClick", items: autoClicker })
-        );
+        g.game.raiseEvent(new g.MessageEvent({ buy: "autoClick" }));
         scene.asset.getAudioById("BuySE").play();
     });
     grandma.onPointDown.add(function () {
-        grandmaes++;
         grandma.opacity = 0;
         grandma.touchable = false;
         grandma.modified();
-        score -= 150;
-        cookieCounter.text = score.toString() + "枚";
-        cookieCounter.invalidate();
+        lose(150);
         shop.opacity = 0;
         shop.touchable = false;
         shopShowing = false;
         shop.modified();
-        g.game.raiseEvent(
-            new g.MessageEvent({ buy: "grandma", items: grandmaes })
-        );
+        g.game.raiseEvent(new g.MessageEvent({ buy: "grandma" }));
         scene.asset.getAudioById("BuySE").play();
     });
     gambler.onPointDown.add(function () {
-        gamblers++;
         gambler.opacity = 0;
         gambler.touchable = false;
         gambler.modified();
-        score -= 500;
-        cookieCounter.text = score.toString() + "枚";
-        cookieCounter.invalidate();
+        lose(500);
         shop.opacity = 0;
         shop.touchable = false;
         shopShowing = false;
         shop.modified();
-        g.game.raiseEvent(
-            new g.MessageEvent({ buy: "gambler", items: gamblers })
-        );
+        g.game.raiseEvent(new g.MessageEvent({ buy: "gambler" }));
         scene.asset.getAudioById("BuySE").play();
     });
     doubleClick.onPointDown.add(function () {
@@ -580,16 +565,12 @@ function cookieClick(scene, font, cookieLayer) {
         doubleClick.opacity = 0;
         doubleClick.touchable = false;
         doubleClick.modified();
-        score -= 300;
-        cookieCounter.text = score.toString() + "枚";
-        cookieCounter.invalidate();
+        lose(300);
         shop.opacity = 0;
         shop.touchable = false;
         shopShowing = false;
         shop.modified();
-        g.game.raiseEvent(
-            new g.MessageEvent({ buy: "doubleClick", items: doubleClicker })
-        );
+        g.game.raiseEvent(new g.MessageEvent({ buy: "doubleClick" }));
         scene.asset.getAudioById("BuySE").play();
     });
     let shopShowing = false;
@@ -626,29 +607,18 @@ function cookieClick(scene, font, cookieLayer) {
     });
     scene.onUpdate.add(function () {
         time += 1;
+        update();
         if (time % 30 == 0) {
             clickSpeed.text =
                 "分速" + ((score / time) * g.game.fps * 60).toFixed(0) + "枚";
             clickSpeed.invalidate();
         }
         if (time % 300 == 0) {
-            if (autoClicker > 0) {
-                if (doubleClicker > 0) {
-                    score = score + doubleClicker * 2;
-                } else {
-                    score++;
-                }
-                click(score);
-                waitUpdate = time;
-            }
-            //console.log(time);
+            let clickCount = 2 ** autoClicker;
+            earn(clickCount); // クリック数を送信
         }
         if (time % 150 == 0) {
-            if (grandmaes > 0) {
-                score += grandmaes;
-                click(score);
-                waitUpdate = time;
-            }
+            earn(grandmaes);
         }
         if (score >= 50) {
             shop.opacity = 1;
@@ -1324,7 +1294,7 @@ function dividend(scene, font, dividendLayer, resultInfo) {
     scene.asset.getAudioById("JRA").play();
     if (!g.game.isActiveInstance()) {
         const mybet = playersTable[g.game.selfId].bet[0];
-        const bonus = playersTable[g.game.selfId].buy[2];
+        let bonus = playersTable[g.game.selfId].buy[2];
 
         if (mybet === resultInfo) {
             const myOdds = calcOdds(mybet);
@@ -1336,6 +1306,7 @@ function dividend(scene, font, dividendLayer, resultInfo) {
             const getScore = Math.floor(
                 playersTable[g.game.selfId].bet[1] * myOdds * bonus
             );
+            console.log(getScore);
 
             dividedResult.text = `配当: ${getScore}枚`;
             dividedResult.invalidate();
@@ -1592,7 +1563,7 @@ function main(param) {
                     score: 0, // スコア
                     betting: false, // 賭け中かどうか
                     bet: [0, 0], // 賭けた選択肢と賭けたクッキ賭けたクッキーの数
-                    buy: [0, 0, 0, 0], // 購入したアイテム[自動クリック]
+                    buy: [0, 0, 0, 0], // 購入したアイテム[自動クリック, グランマ, ギャンブラー, ダブルクリック]
                 };
             }
             if (!g.game.isActiveInstance() && myID == g.game.selfId) {
@@ -1609,10 +1580,12 @@ function main(param) {
         });
         register(scene, font, registerLayer, cookieLayer, rankingLayer);
         scene.onMessage.add((msg) => {
-            if (msg.data.click) {
-                // クッキーをクリックしたとき
-                playersTable[msg.player.id].score = msg.data.click;
-                //console.log(playersTable);
+            if (msg.data.earn) {
+                // クッキーが増えたとき
+                playersTable[msg.player.id].score += msg.data.earn;
+            } else if (msg.data.lose) {
+                // クッキーが減ったとき
+                playersTable[msg.player.id].score -= msg.data.lose;
             } else if (msg.data.startGamble) {
                 // 賭け開始
                 let betInputLayer = new g.E({
@@ -1651,21 +1624,16 @@ function main(param) {
             } else if (msg.data.buy) {
                 // アイテム購入
                 if (msg.data.buy == "autoClick") {
-                    playersTable[msg.player.id].buy[0] = msg.data.items;
-                    playersTable[msg.player.id].score -= 50;
-                    //console.log("update");
+                    playersTable[msg.player.id].buy[0]++;
                 }
                 if (msg.data.buy == "grandma") {
-                    playersTable[msg.player.id].buy[1] = msg.data.items;
-                    playersTable[msg.player.id].score -= 150;
+                    playersTable[msg.player.id].buy[1]++;
                 }
                 if (msg.data.buy == "gambler") {
-                    playersTable[msg.player.id].buy[2] = msg.data.items;
-                    playersTable[msg.player.id].score -= 500;
+                    playersTable[msg.player.id].buy[2]++;
                 }
                 if (msg.data.buy == "doubleClick") {
-                    playersTable[msg.player.id].buy[3] = msg.data.items;
-                    playersTable[msg.player.id].score -= 300;
+                    playersTable[msg.player.id].buy[3]++;
                 }
             }
         });
