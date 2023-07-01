@@ -614,7 +614,7 @@ function cookieClick(scene, font, cookieLayer) {
             clickSpeed.invalidate();
         }
         if (time % 300 == 0) {
-            let clickCount = 2 ** autoClicker;
+            let clickCount = 2 ** doubleClicker * autoClicker;
             earn(clickCount); // クリック数を送信
         }
         if (time % 150 == 0) {
