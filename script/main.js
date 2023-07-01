@@ -364,6 +364,7 @@ function cookieClick(scene, font, cookieLayer) {
     let gamblers = 0; // 賭けの倍率
     let waitUpdate = 0; // メッセージを投げてからの時間
     let doubleClicker = 0; // ダブルクリック数
+    let doubleClickPrice = 100; // ダブルクリックの値段
 
     function earn(num) {
         // 増えたクッキーの情報を更新
@@ -387,6 +388,7 @@ function cookieClick(scene, font, cookieLayer) {
             grandmaes = playersTable[g.game.selfId].buy[1];
             gamblers = playersTable[g.game.selfId].buy[2];
             doubleClicker = playersTable[g.game.selfId].buy[3];
+            doubleClickPrice = 100 ** (doubleClicker + 1);
             cookieCounter.text = score.toString() + "枚";
             cookieCounter.invalidate();
         }
@@ -511,6 +513,19 @@ function cookieClick(scene, font, cookieLayer) {
         opacity: 0,
         local: true,
     });
+    let doubleClickLabel = new g.Label({
+        scene: scene,
+        parent: cookieLayer,
+        font: font,
+        textColor: "White",
+        anchorX: 0.5,
+        anchorY: 0.5,
+        text: "(100枚)",
+        fontSize: 25,
+        x: 180,
+        y: 557,
+        local: true,
+    });
     cookie.onPointDown.add(function () {
         cookie.scaleX = 0.65;
         cookie.scaleY = 0.65;
@@ -525,51 +540,22 @@ function cookieClick(scene, font, cookieLayer) {
         cookie.modified();
     });
     autoClick.onPointDown.add(function () {
-        autoClick.opacity = 0;
-        autoClick.touchable = false;
-        autoClick.modified();
         lose(50);
-        shop.opacity = 0;
-        shop.touchable = false;
-        shopShowing = false;
-        shop.modified();
         g.game.raiseEvent(new g.MessageEvent({ buy: "autoClick" }));
         scene.asset.getAudioById("BuySE").play();
     });
     grandma.onPointDown.add(function () {
-        grandma.opacity = 0;
-        grandma.touchable = false;
-        grandma.modified();
         lose(150);
-        shop.opacity = 0;
-        shop.touchable = false;
-        shopShowing = false;
-        shop.modified();
         g.game.raiseEvent(new g.MessageEvent({ buy: "grandma" }));
         scene.asset.getAudioById("BuySE").play();
     });
     gambler.onPointDown.add(function () {
-        gambler.opacity = 0;
-        gambler.touchable = false;
-        gambler.modified();
         lose(500);
-        shop.opacity = 0;
-        shop.touchable = false;
-        shopShowing = false;
-        shop.modified();
         g.game.raiseEvent(new g.MessageEvent({ buy: "gambler" }));
         scene.asset.getAudioById("BuySE").play();
     });
     doubleClick.onPointDown.add(function () {
-        doubleClicker++;
-        doubleClick.opacity = 0;
-        doubleClick.touchable = false;
-        doubleClick.modified();
-        lose(300);
-        shop.opacity = 0;
-        shop.touchable = false;
-        shopShowing = false;
-        shop.modified();
+        lose(doubleClickPrice);
         g.game.raiseEvent(new g.MessageEvent({ buy: "doubleClick" }));
         scene.asset.getAudioById("BuySE").play();
     });
@@ -589,6 +575,8 @@ function cookieClick(scene, font, cookieLayer) {
             doubleClick.opacity = 0;
             doubleClick.touchable = false;
             doubleClick.modified();
+            doubleClickLabel.text = "";
+            doubleClickLabel.invalidate();
         } else {
             shopShowing = true;
             autoClick.opacity = 1;
@@ -603,6 +591,8 @@ function cookieClick(scene, font, cookieLayer) {
             doubleClick.opacity = 1;
             doubleClick.touchable = true;
             doubleClick.modified();
+            doubleClickLabel.text = `(${doubleClickPrice}枚)`;
+            doubleClickLabel.invalidate();
         }
     });
     scene.onUpdate.add(function () {
@@ -620,18 +610,13 @@ function cookieClick(scene, font, cookieLayer) {
         if (time % 150 == 0) {
             earn(grandmaes);
         }
-        if (score >= 50) {
-            shop.opacity = 1;
-            shop.touchable = true;
-            shop.modified();
-        } else {
-            shop.opacity = 0;
-            shop.touchable = false;
-            shop.modified();
-        }
         if (shopShowing && score >= 50) {
             autoClick.opacity = 1;
             autoClick.touchable = true;
+            autoClick.modified();
+        } else if (shopShowing && score < 50) {
+            autoClick.opacity = 0.5;
+            autoClick.touchable = false;
             autoClick.modified();
         } else {
             autoClick.opacity = 0;
@@ -664,18 +649,24 @@ function cookieClick(scene, font, cookieLayer) {
             gambler.touchable = false;
             gambler.modified();
         }
-        if (shopShowing && score >= 300) {
+        if (shopShowing && score >= doubleClickPrice) {
             doubleClick.opacity = 1;
             doubleClick.touchable = true;
             doubleClick.modified();
-        } else if (shopShowing && score < 300) {
+            doubleClickLabel.text = `(${doubleClickPrice}枚)`;
+            doubleClickLabel.invalidate();
+        } else if (shopShowing && score < doubleClickPrice) {
             doubleClick.opacity = 0.5;
             doubleClick.touchable = false;
             doubleClick.modified();
+            doubleClickLabel.text = `(${doubleClickPrice}枚)`;
+            doubleClickLabel.invalidate();
         } else {
             doubleClick.opacity = 0;
             doubleClick.touchable = false;
             doubleClick.modified();
+            doubleClickLabel.text = "";
+            doubleClickLabel.invalidate();
         }
     });
 
